@@ -45,4 +45,11 @@ public class Item {
     public void removeTag(String tag) {
         Tags.remove(tag);
     }
+    public ArrayList<String> reviews = new ArrayList<String>();
+    public ArrayList<String> getReviews() {
+        return reviews;
+    }
+    public void addReview(String review) {
+        reviews.add(review);
+    }
 }

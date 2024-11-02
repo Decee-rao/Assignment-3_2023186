@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Customer extends User {
     private ArrayList<Item> cart = new ArrayList<>();
@@ -74,7 +75,7 @@ public class Customer extends User {
     }
 
     public void Menu() {
-        String[] responses = {"Browse Menu", "Cart", "Track Your Order","Buy Premium","Logout"};
+        String[] responses = {"Browse Menu", "Cart", "Track Your Order","Buy Premium","Review Items","View Reviews","Logout"};
         while (true) {
             int option = JOptionPane.showOptionDialog(null, "Choose your option", "Menu", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, responses, responses[0]);
             if (option == 0) {
@@ -89,8 +90,87 @@ public class Customer extends User {
             else if (option == 3) {
                 isVIP = 0;
             }
+            else if (option == 4) {
+                reviewItems();
+            }
+            else if (option == 5) {
+                viewReview();
+            }
             else {
                 break;
+            }
+        }
+    }
+    private static HashMap<String,Item> OrderIDtoOrder = new HashMap<>();
+    private void reviewItems() {
+        JComboBox<String> reviewBox = new JComboBox<>();
+
+        for (Order order : Data.getCompletedOrders()) {
+            if (order.getOrderStatus().equals("Delivered")) {
+                for(Item item: order.getItemsList())
+                {
+                    reviewBox.addItem(item.getName());
+                    OrderIDtoOrder.put(item.getName(),item);
+                }
+            }
+        }
+
+        if (reviewBox.getItemCount() == 0) {
+            JOptionPane.showMessageDialog(null, "No orders to review.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(new JLabel("Select Order:"));
+        panel.add(reviewBox);
+        panel.add(new JLabel("Enter your review:"));
+        JTextArea reviewArea = new JTextArea(5, 20);
+        JScrollPane scrollPane = new JScrollPane(reviewArea);
+        panel.add(scrollPane);
+
+        int result = JOptionPane.showConfirmDialog(null, panel, "Review Order", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            String selectedOrderId = (String) reviewBox.getSelectedItem();
+            if (selectedOrderId != null) {
+                Item selecteditem = OrderIDtoOrder.get(selectedOrderId);
+                String review = reviewArea.getText();
+                if (review != null && !review.trim().isEmpty()) {
+                    selecteditem.addReview(review);
+                    JOptionPane.showMessageDialog(null, "Thank you for your review!", "Review Submitted", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "No review entered.", "Notice", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        }
+    }
+
+    private void viewReview() {
+        JComboBox<String> orderBox = new JComboBox<>();
+        Map<String, Item> deliveredOrdersMap = new HashMap<>();
+
+        for (Item item : Data.getItems()) {
+            orderBox.addItem(item.getName());
+            deliveredOrdersMap.put(item.getName(), item);
+        }
+
+        if (orderBox.getItemCount() == 0) {
+            JOptionPane.showMessageDialog(null, "No Items Available to reviews.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int selection = JOptionPane.showConfirmDialog(null, orderBox, "Select a Delivered Order", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (selection == JOptionPane.OK_OPTION) {
+            String selectedOrder = (String) orderBox.getSelectedItem();
+            Item item = deliveredOrdersMap.get(selectedOrder);
+            if (item.getReviews().isEmpty()) {
+                JOptionPane.showMessageDialog(null, "No reviews for this item.", "Notice", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                StringBuilder reviews = new StringBuilder();
+                for (String review : item.getReviews()) {
+                    reviews.append(review).append("\n");
+                }
+                JOptionPane.showMessageDialog(null, reviews.toString(), "Reviews", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }
@@ -351,60 +431,70 @@ public class Customer extends User {
     }
 
 
-    public void trackOrder(){
+    public void trackOrder() {
+        String[] columns = {"Order ID", "Item Name", "Per Unit Price", "Qty", "Total Price", "Status"};
 
-        String columns[] = {"Order ID", "Item Name", "Per Unit Price", "Qty","Total Price","Status"};
-
-        int i = 0;
         int numOrders = 0;
-        for(Order order : Data.Orders){
-            numOrders+=order.getItemsList().size();
+        for (Order order : Data.Orders) {
+            numOrders += order.getItemsList().size();
         }
-        Object [][] data = new Object[numOrders][6];
 
-        for (Order order : Data.getOrders()) {
-            int totalPrice = 0;
-            data[i][0] = order.getOrderID();
-            for (int j = 0; j < order.getItems().size(); j++) {
-                data[i+j][1] = order.getItemsList().get(j).getName();
-                data[i+j][2] = order.getItemsList().get(j).getPrice();
-                data[i+j][3] = order.getItemsQty().get(order.getItemsList().get(j));
-                totalPrice += order.getItemsList().get(j).getPrice() * order.getItemsQty().get(order.getItemsList().get(j));
-            }
-            i = i + order.getItemsList().size()-1;
-            data[i][4] = totalPrice;
-            data[i][5] = order.getOrderStatus();
-            i++;
-        }
-        if(numOrders == 0){
+        if (numOrders == 0) {
             JOptionPane.showMessageDialog(null, "No orders placed yet.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+
+        Object[][] data = new Object[numOrders][6];
+        int i = 0;
+
+        for (Order order : Data.Orders) {
+            int totalPrice = 0;
+            data[i][0] = order.getOrderID();
+            for (int j = 0; j < order.getItemsList().size(); j++) {
+                data[i + j][1] = order.getItemsList().get(j).getName();
+                data[i + j][2] = order.getItemsList().get(j).getPrice();
+                data[i + j][3] = order.getItemsQty().get(order.getItemsList().get(j));
+                totalPrice += order.getItemsList().get(j).getPrice() * order.getItemsQty().get(order.getItemsList().get(j));
+            }
+            data[i][4] = totalPrice;
+            data[i][5] = order.getOrderStatus();
+            i += order.getItemsList().size();
+        }
+
         JTable table = new JTable(data, columns);
         JScrollPane scrollPane = new JScrollPane(table);
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.add(scrollPane);
-        JButton CancelButton = new JButton("Cancel Order");
-        panel.add(CancelButton);
-        CancelButton.addActionListener(e->{
+
+        JButton cancelButton = new JButton("Cancel Order");
+        panel.add(cancelButton);
+
+        cancelButton.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if(row == -1){
+            if (row == -1) {
                 JOptionPane.showMessageDialog(null, "Please select an order to cancel.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            int OrderID = (int) table.getValueAt(row, 0);
-            for(Order order: Data.Orders){
-                if(order.getOrderID() == OrderID){
-                    Data.Orders.remove(order);
-                    JOptionPane.showMessageDialog(null, "Order cancelled successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            int orderId = (int) table.getValueAt(row, 0);
+            Order orderToRemove = null;
+            for (Order order : Data.Orders) {
+                if (order.getOrderID() == orderId) {
+                    orderToRemove = order;
                     break;
                 }
             }
+
+            if (orderToRemove != null) {
+                Data.Orders.remove(orderToRemove);
+                JOptionPane.showMessageDialog(null, "Order canceled successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                trackOrder();
+            }
         });
 
-        JOptionPane.showMessageDialog(null, scrollPane, "Orders", JOptionPane.INFORMATION_MESSAGE);
-
+        JOptionPane.showConfirmDialog(null, panel, "Track Orders", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
     }
-    
+
+
 }

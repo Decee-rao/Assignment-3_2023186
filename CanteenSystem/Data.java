@@ -14,6 +14,7 @@ public class Data {
     public static HashMap<Item,Integer> ItemPrices = new HashMap<Item,Integer>();
     public static HashMap<Item,Integer> ItemStock = new HashMap<Item,Integer>();
     public static ArrayList<Order> completedOrders = new ArrayList<Order>();
+
     public Data() {
         Users.add(new User("admin","admin"));
 
@@ -107,4 +108,5 @@ public class Data {
         }
         return null;
     }
+
 }

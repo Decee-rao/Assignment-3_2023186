@@ -409,14 +409,14 @@ public class Admin extends User {
         if (option == JOptionPane.OK_OPTION) {
             String selectedOrder = (String) orderComboBox.getSelectedItem();
             Order order = strToOrder.get(selectedOrder);
-            String[] responses = {"Processing","Delievered","Denied","Refunded"};
+            String[] responses = {"Processing","Delivered","Denied","Refunded"};
             int Option = JOptionPane.showOptionDialog(null, "Choose your option", "Order Status", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, responses, responses[0]);
             if(Option == 0) {
                 order.setOrderStatus("Processing");
             }
             else if(Option == 1)
             {
-                order.setOrderStatus("Delievered");
+                order.setOrderStatus("Delivered");
                 order.getCustomer().completeOrder(order);
                 Data.completedOrders.add(order);
             }
@@ -450,20 +450,26 @@ public class Admin extends User {
         String[] columnNames = {"Order Id", "Customer Name", "Item Name", "Quantity", "Total Price", "Order Status"};
         int totalItems = 0;
         for (Order order : Data.getOrders()) {
-            totalItems += order.getItems().size();
+            if (order.getOrderStatus().equals("Pending"))
+            {
+                totalItems += order.getItems().size();
+            }
         }
         Object[][] data = new Object[totalItems][6];
         int i = 0;
         for (Order order : Data.getOrders()) {
-            data[i][0] = order.getOrderID();
-            data[i][1] = order.getCustomerName();
-            for (int j = 0; j < order.getItems().size(); j++) {
-                data[i+j][2] = order.getItemsList().get(j).getName();
-                data[i+j][3] = order.getItemsList().get(j).getStock();
+            if(order.getOrderStatus().equals("Pending"))
+            {
+                data[i][0] = order.getOrderID();
+                data[i][1] = order.getCustomerName();
+                for (int j = 0; j < order.getItems().size(); j++) {
+                    data[i + j][2] = order.getItemsList().get(j).getName();
+                    data[i + j][3] = order.getItemsList().get(j).getStock();
+                }
+                i = i + order.getItemsList().size() - 1;
+                data[i][4] = order.getTotalPrice();
+                data[i][5] = order.getOrderStatus();
             }
-            i = i + order.getItemsList().size()-1;
-            data[i][4] = order.getTotalPrice();
-            data[i][5] = order.getOrderStatus();
         }
         JTable table = new JTable(data, columnNames);
         JScrollPane scrollPane = new JScrollPane(table);
@@ -487,19 +493,20 @@ public class Admin extends User {
     }
 
     private static void GenerateSalesReport() {
-        String[] columnNames = {"Total Orders","Delievered Orders","Pending Orders","Total Sales"};
+        String[] columnNames = {"Total Orders","Delivered Orders","Pending Orders","Total Sales"};
         int totalOrders = Data.getOrders().size();
         int delieveredOrders = 0;
         int pendingOrders = 0;
         int totalSales = 0;
         for(Order order: Data.getOrders()) {
-            if(order.getOrderStatus().equals("Delievered")) {
+            if(order.getOrderStatus().equals("Delivered")) {
                 delieveredOrders++;
+                totalSales += order.getTotalPrice();
             }
             else {
                 pendingOrders++;
             }
-            totalSales += order.getTotalPrice();
+
         }
         Object data[][] = new Object[3][4];
         data[0][0] = totalOrders;

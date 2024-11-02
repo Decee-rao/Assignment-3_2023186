@@ -11,6 +11,7 @@ public class Order implements Comparable<Order> {
     private String pass;
     private Customer customer;
     private int TotalPrice;
+    private String Review;
     private static int IDs = 1;
     private String isDelivered = "Pending";
     public Order(int OrderID, String CustomerName) {
@@ -74,6 +75,7 @@ public class Order implements Comparable<Order> {
     }
 
     public int getTotalPrice() {
+        int TotalPrice = 0;
         for(Item item: Items.keySet()) {
             TotalPrice += item.getPrice() * Items.get(item);
         }
@@ -85,5 +87,13 @@ public class Order implements Comparable<Order> {
     public HashMap<Item, Integer> getItemsQty() {
         return Items;
     }
+    public void setReview(String review) {
+        Review = review;
+    }
+    public String getReview() {
+        return Review;
+    }
+
+
 
 }
